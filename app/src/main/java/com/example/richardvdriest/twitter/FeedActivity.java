@@ -1,22 +1,22 @@
 package com.example.richardvdriest.twitter;
 
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.support.annotation.NonNull;
+import android.support.design.widget.BottomNavigationView;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.EditText;
-import android.widget.ListView;
 import android.widget.SimpleAdapter;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.parse.FindCallback;
-import com.parse.Parse;
 import com.parse.ParseException;
 import com.parse.ParseObject;
 import com.parse.ParseQuery;
@@ -31,13 +31,35 @@ import java.util.Map;
 public class FeedActivity extends AppCompatActivity {
     ParseUser user;
     ParseObject tweet;
-    ListView listView;
+    BottomNavigationView navigation;
+    RecyclerView mRecylclerView;
+    FeedAdapter feedAdapter;
+    List<Tweet> feedListItems;
+
+    BottomNavigationView.OnNavigationItemSelectedListener onNavigationItemSelectedListener = new BottomNavigationView.OnNavigationItemSelectedListener() {
+        @Override
+        public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+            switch(item.getItemId()){
+                case R.id.feed:
+                    return true;
+                case R.id.users:
+                    findUserButtonHandler();
+                    return true;
+                case R.id.tweetButton:
+                    tweetButtonHandler();
+                    return true;
+                case R.id.logout:
+                    logoutButtonHandler();
+                    return true;
+            }
+            return false;
+        }
+    };
 
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.feedmenu, menu);
-
         return super.onCreateOptionsMenu(menu);
     }
 
@@ -65,6 +87,7 @@ public class FeedActivity extends AppCompatActivity {
         builder.setPositiveButton("Send", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialogInterface, int i) {
+                navigation.setSelectedItemId(R.id.feed);
                 if(tweetEditText.getText().toString().isEmpty()){
                     Toast.makeText(getApplicationContext(),"Fill in your tweet", Toast.LENGTH_SHORT).show();
                 }else {
@@ -88,6 +111,7 @@ public class FeedActivity extends AppCompatActivity {
         builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialogInterface, int i) {
+                navigation.setSelectedItemId(R.id.feed);
                 Log.i("Info", "Tweet cancelled");
                 dialogInterface.cancel();
             }
@@ -104,6 +128,8 @@ public class FeedActivity extends AppCompatActivity {
             findUserButtonHandler();
         }else if(item.getItemId() == R.id.tweetButton){
             tweetButtonHandler();
+        }else if(item.getItemId() == R.id.feed){
+
         }
         return super.onOptionsItemSelected(item);
     }
@@ -122,7 +148,16 @@ public class FeedActivity extends AppCompatActivity {
 
         tweet = new ParseObject("Tweet");
 
-        listView = findViewById(R.id.listView);
+        navigation = findViewById(R.id.bottom_navigation);
+        navigation.setOnNavigationItemSelectedListener(onNavigationItemSelectedListener);
+
+
+        mRecylclerView = findViewById(R.id.listView);
+        feedListItems = new ArrayList<>();
+        mRecylclerView.setLayoutManager(new LinearLayoutManager(this));
+
+
+
 
         final List<Map<String, String>> tweetData = new ArrayList<>();
 
@@ -139,8 +174,10 @@ public class FeedActivity extends AppCompatActivity {
                     tweetInfo.put("username", tweet.getString("username"));
                     tweetData.add(tweetInfo);
                     Log.i("Ïnfo", "Tweet succesvol opgehaald");
-                    SimpleAdapter simpleAdapter = new SimpleAdapter(FeedActivity.this, tweetData, android.R.layout.simple_list_item_2, new String[] {"content", "username"}, new int[] {android.R.id.text1, android.R.id.text2});
-                    listView.setAdapter(simpleAdapter);
+                    feedListItems.add(new Tweet(R.drawable.ic_launcher_background, tweetInfo.get("username"), tweetInfo.get("content")));
+                    feedAdapter = new FeedAdapter(FeedActivity.this, feedListItems);
+                    //SimpleAdapter simpleAdapter = new SimpleAdapter(FeedActivity.this, tweetData, android.R.layout.simple_list_item_2, new String[] {"content", "username"}, new int[] {android.R.id.text1, android.R.id.text2});
+                    mRecylclerView.setAdapter(feedAdapter);
                 }
             }
         });
